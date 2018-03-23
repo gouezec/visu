@@ -45,8 +45,15 @@
           .append("h2")
 		  .text("Titanic Passenger Survival Rate")
 
-		 function update(pclass) {
-			// Filter data with the right passenger class
+		 function update(pclass) {		
+			// Filter passengers with age known
+			data = data.filter( function(d) {return d['Age'] !='';} );
+			
+			// Filter passengerz under 80
+			// Workaround for a bug in dimple: bubbles behave in a fuzzy way when there is no more data
+			data = data.filter( function(d) {return d['Age'] < 80;} );
+
+			// Filter passengers with the right passenger class
 			var filtered_data;
 			if(pclass == 0)
 				filtered_data = data;
@@ -56,7 +63,7 @@
 			// Group by bunch of 10 years the number of survivors
 			var nested = d3.nest()
 				.key( function(d) {return d['Sex'];} )
-				.key( function(d) {return Math.floor(d['Age'] % 10)*10;} )
+				.key( function(d) {return Math.floor(d['Age'] / 10)*10;} )
 				.rollup( function(v) { return {
 					p_survivors: d3.mean(v, function(d) {return d['Survived'];}),
 					n_survivors: d3.sum(v, function(d) {return d['Survived'];}),
@@ -68,13 +75,12 @@
 			nested.forEach( function(sex) {
 				sex.values.forEach(function(ageBunch) {
 					flat.push({
-						sex: sex.key,
-						ageBunch: parseInt(ageBunch.key),
-						p_survivors: ageBunch.value.p_survivors,
-						n_survivors: Math.sqrt(ageBunch.value.n_survivors),
-						n_passengers: ageBunch.value.n_passengers}); }); } );
+						"Sex": sex.key,
+						"Age range": parseInt(ageBunch.key),
+						"Percentage of survivors": ageBunch.value.p_survivors,
+						"Number of survivors": ageBunch.value.n_survivors,
+						"Number of passengers": ageBunch.value.n_passengers}); }); } );
 
-			
 			// Order the data frame by bunch of 10 years ascending
 			sorted = flat.sort(function(a, b) { return a.ageBunch - b.ageBunch; });
 			return sorted;
@@ -85,21 +91,19 @@
 	   
 		// Draw the chart
 		var chart = new dimple.chart(svg, update(0));
-		var x = chart.addCategoryAxis("x", "ageBunch");
+		var x = chart.addCategoryAxis("x", "Age range");
 		x.showGridlines = true;
-		x.title = "Age range";
 		x.fontSize = 12;
-		var y = chart.addMeasureAxis("y", "p_survivors");
+		var y = chart.addMeasureAxis("y", "Percentage of survivors");
+		y.tickFormat = ".0%";
 		y.overrideMin = 0;
-		y.overrideMax = 1;
-		y.title = "Survival proportion";
 		y.fontSize = 12;
-		chart.addMeasureAxis("z", "n_survivors");
-		chart.addSeries("sex", dimple.plot.bubble);
-		chart.addSeries("sex", dimple.plot.line);
+		chart.addMeasureAxis("z", "Number of survivors");
+		chart.addSeries("Sex", dimple.plot.bubble);
+		//chart.addSeries("sex", dimple.plot.line);
 		legend = chart.addLegend("75%", "98%", 500, 300, "left");
 		legend.fontSize = 12;
-		chart.assignColor("male", "blue");
+		chart.assignColor("male", "DodgerBlue");
 		chart.assignColor("female", "pink");
 		chart.draw();
 
