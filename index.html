@@ -71,7 +71,7 @@
 						sex: sex.key,
 						ageBunch: parseInt(ageBunch.key),
 						p_survivors: ageBunch.value.p_survivors,
-						n_survivors: ageBunch.value.n_survivors,
+						n_survivors: Math.sqrt(ageBunch.value.n_survivors),
 						n_passengers: ageBunch.value.n_passengers}); }); } );
 
 			
