@@ -1,0 +1,298 @@
+<html>
+<head>
+	<style>
+		h2 {
+			text-align: center;
+			font-family: Arial;
+			color: black;
+		}
+
+		div.chart {
+			position: fixed;
+			top: 0px;
+			left: 50px;
+		}
+		
+		div.legend_size {
+			position: fixed;
+			top: 475px;
+			left: 800px;
+			font-family: Arial;
+			font-size: 12;
+		}
+
+		div.legend_size svg {
+			width: 200;
+			height: 300;
+		}
+		
+		div.legend_size circle {
+			stroke: Tomato;
+			fill:none;
+		}
+
+		div.legend_color {
+			position: fixed;
+			top: 375px;
+			left: 800px;
+			font-family: Arial;
+			font-size: 12;
+		}
+
+		div.legend_color svg {
+			width: 200;
+			height: 300;
+		}
+		
+		div.pclass_buttons {
+			position: fixed;
+			top: 120px;
+			left: 800px;
+			font-family: Arial;
+			font-size: 12;
+		}
+
+		div.pclass_buttons div {
+			background-color: rgb(255, 255, 255);
+			color: black;
+			padding: 3px;
+			margin: 7px;
+			width: 120px;
+			border-style: solid;
+			border-width: 1px;
+			border-color: black;
+			cursor: pointer;
+		}
+	</style>
+
+  <script src="d3.v4.js"></script>
+  <script src="dimple.v2.3.0.js"></script>
+  <script type="text/javascript">
+	function draw(data) {	  
+		d3.select("body")
+          .append("div")
+          .attr("class","chart")
+		  
+		d3.select("body div.chart")
+          .append("h2")
+		  .text("Titanic Passenger Survival Rate")
+
+		 function update(pclass) {		
+			// Filter passengers with age known
+			data = data.filter( function(d) {return d['Age'] !='';} );
+			
+			// Filter passengerz under 80
+			// Workaround for a bug in dimple: bubbles behave in a fuzzy way when there is no more data
+			data = data.filter( function(d) {return d['Age'] < 80;} );
+
+			// Filter passengers with the right passenger class
+			var filtered_data;
+			if(pclass == 0)
+				filtered_data = data;
+			else
+				filtered_data = data.filter( function(d) {return d['Pclass']==pclass;} );
+			
+			// Group by bunch of 10 years the number of survivors
+			var nested = d3.nest()
+				.key( function(d) {return d['Sex'];} )
+				.key( function(d) {return Math.floor(d['Age'] / 10)*10;} )
+				.rollup( function(v) { return {
+					p_survivors: d3.mean(v, function(d) {return d['Survived'];}),
+					n_survivors: d3.sum(v, function(d) {return d['Survived'];}),
+					n_passengers: v.length }; })
+				.entries(filtered_data);
+			
+			// Transform the nested data set in flat one		
+			var flat = []
+			nested.forEach( function(sex) {
+				sex.values.forEach(function(ageBunch) {
+					flat.push({
+						"Sex": sex.key,
+						"ageBunch": parseInt(ageBunch.key),
+						"Age range": parseInt(ageBunch.key)+".."+(parseInt(ageBunch.key)+10),
+						"Percentage of survivors": ageBunch.value.p_survivors,
+						"Number of survivors": ageBunch.value.n_survivors,
+						"Number of passengers": ageBunch.value.n_passengers}); }); } );
+
+			// Order the data frame by bunch of 10 years ascending
+			sorted = flat.sort(function(a, b) { return a.ageBunch - b.ageBunch; });
+			return sorted;
+		}
+		
+		// Reserve the frame for the chart
+		var svg = dimple.newSvg("div.chart", "800", "600");
+	   
+		// Draw the chart
+		var chart = new dimple.chart(svg, update(0));
+		var x = chart.addCategoryAxis("x", "Age range");
+		x.addOrderRule("Age range")
+		x.showGridlines = true;
+		x.fontSize = 12;
+		var y = chart.addMeasureAxis("y", "Percentage of survivors");
+		y.tickFormat = ".0%";
+		y.overrideMin = 0;
+		y.fontSize = 12;
+		chart.addMeasureAxis("z", "Number of survivors");
+		var serie = chart.addSeries("Sex", dimple.plot.bubble);
+		chart.assignColor("male", "DodgerBlue");
+		chart.assignColor("female", "Tomato");
+		chart.draw();		
+		
+		//Customize the tooltip for the serie
+        serie.getTooltipText = function (d) {
+			function getNbPassengers(d) {
+				var n = "N/A";
+				for(p in chart.data) {
+					if(chart.data[p]["Sex"]===d.aggField[0] && chart.data[p]["Age range"]===d.x) {
+						n = chart.data[p]["Number of passengers"];
+					}
+				}
+				return n;
+			}
+            return ["Sex: " + d.aggField[0],
+                    "Age range: " + d.x,
+					"Survival percentage: " + Math.round(100*d.yValue,0)+"%",
+					"Number of survivors: " + d.z,
+					"Number of passengers: " + getNbPassengers(d)
+                ];
+            };
+
+
+		// Include the legend for the circle size
+		// The radius in dimple is dynamic so the legend has to be recalculated when the selection of passenger class changes
+		function updateSizeLegend() {
+			d3.select(".legend_size").select("svg")
+			.selectAll("g")
+			.data(cir)
+			.selectAll("circle")
+			.transition()
+            .duration(500)
+			.attr("cx", 10+ 50)
+			.attr("cy", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d);})
+			.attr("r", function(d) {return chart.axes[2]._scale(d);})
+
+			d3.select(".legend_size").select("svg").selectAll("text")
+			.transition()
+            .duration(500)
+			.attr("x", 10+50-6)
+			.attr("y", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d)-chart.axes[2]._scale(d)-1;})
+			.text(function(d) {return d;})
+		}
+			
+		d3.select("body")
+			.append("div")
+			.attr("class", "legend_size")
+			.append("b")
+			.text("Number of survivors:")
+			.append("br")
+			
+		var cir = [20,10];
+		var sel = d3.select(".legend_size")
+			.append("svg")
+			.selectAll("g")
+			.data(cir)
+			.enter()
+			.append("g")
+			
+		sel.append("circle")
+			.attr("cx", 50)
+			.attr("cy", 0)
+			.attr("r", 0)			
+		sel.append("text")
+			.attr("x", 50)
+			.attr("y", 0)
+			.text("")
+			updateSizeLegend();
+			
+		// Include the legend for the circle color
+		var sexes = [{name:"female", color:"Tomato"},
+					 {name:"male", color:"DodgerBlue"}];
+		var wrec = 25;
+		var hrec = 15;
+		var xpad = 40;
+		
+		d3.select("body")
+			.append("div")
+			.attr("class", "legend_color")
+			.append("b")
+			.text("Circle colors:")
+			.append("br")
+					 
+		var sel = d3.select(".legend_color")
+			.append("svg")
+			.selectAll("g")
+			.data(sexes)
+			.enter()
+			.append("g")
+			
+			sel.append("rect")
+			.attr("x", xpad)
+			.attr("y", function(d,i) {return 10+i*(hrec+hrec/2);})
+			.attr("width", wrec)
+			.attr("height", hrec)
+			.attr("fill", function(d) {return d.color;})
+			.attr("stroke", "none");
+			
+			sel.append("text")
+			.attr("x", xpad+wrec+10)
+			.attr("y", function(d,i) {return 10+i*(hrec+hrec/2)+hrec-4;})
+			.text(function(d) {return d.name;})
+			
+		// Include the buttons for selecting the passenger class
+		var passengerClasses = [
+			{ n:0, label:"All classes"},
+			{ n:1, label:"1st class"},
+			{ n:2, label:"2nd class"},
+			{ n:3, label:"3rd class"} ];
+			  
+		d3.select("body")
+			.append("div")
+			.attr("class", "pclass_buttons")
+			.append("b")
+			.text("Select passenger class:")
+						
+        var buttons = d3.select(".pclass_buttons").selectAll("div")
+                        .data(passengerClasses)
+                        .enter()
+                        .append("div")
+                        .text(function(d) { return d.label; });
+		
+		d3.select(".pclass_buttons div")
+			.style("background", "rgb(0,89,179)")
+            .style("color", "white");
+				
+        buttons.on("click", function(d) {
+					// Unselect all buttons
+					d3.selectAll(".pclass_buttons div")
+                      .transition()
+                      .duration(500)
+                      .style("background", null)
+                      .style("color", null);
+
+					 // Select the pressed button
+					 d3.select(this)
+                      .transition()
+                      .duration(500)
+                      .style("background", "rgb(0,89,179")
+                      .style("color", "white");
+					  
+					 //Update the data 
+					 var updated = update(d.n);
+					 
+					 // Redraw the chart with the new data
+					 chart.data= updated;
+					 chart.draw(1000, false);
+					 
+					// Update the size legend
+					updateSizeLegend();		
+				});
+	}
+  </script>
+</head>
+<body>
+    <script type="text/javascript">
+    // Use D3 to load the CSV file and pass the contents of it to the draw function
+	d3.csv("titanic-data.csv", draw);
+	</script>
+  </body>
+</html>
