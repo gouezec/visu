@@ -68,6 +68,9 @@
   <script src="d3.v4.js"></script>
   <script src="dimple.v2.3.0.js"></script>
   <script type="text/javascript">
+	function getArrayMax(arr) {
+    		return Math.max.apply(null, arr);
+	}
 	function draw(data) {	  
 		d3.select("body")
           .append("div")
@@ -168,14 +171,14 @@
 			.transition()
             .duration(500)
 			.attr("cx", 10+ 50)
-			.attr("cy", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d);})
+			.attr("cy", function(d) {return 10+chart.axes[2]._scale(getArrayMax(cir))*2-chart.axes[2]._scale(d);})
 			.attr("r", function(d) {return chart.axes[2]._scale(d);});
 
 			d3.select(".legend_size").select("svg").selectAll("text")
 			.transition()
             .duration(500)
 			.attr("x", 10+50-6)
-			.attr("y", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d)-chart.axes[2]._scale(d)-1;})
+			.attr("y", function(d) {return 10+chart.axes[2]._scale(getArrayMax(cir))*2-chart.axes[2]._scale(d)-chart.axes[2]._scale(d)-1;})
 			.text(function(d) {return d;});
 		}
 			
