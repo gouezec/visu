@@ -71,11 +71,11 @@
 	function draw(data) {	  
 		d3.select("body")
           .append("div")
-          .attr("class","chart")
+          .attr("class","chart");
 		  
 		d3.select("body div.chart")
           .append("h2")
-		  .text("Titanic Passenger Survival Rate")
+		  .text("Titanic Passenger Survival Rate");
 
 		 function update(pclass) {		
 			// Filter passengers with age known
@@ -103,7 +103,7 @@
 				.entries(filtered_data);
 			
 			// Transform the nested data set in flat one		
-			var flat = []
+			var flat = [];
 			nested.forEach( function(sex) {
 				sex.values.forEach(function(ageBunch) {
 					flat.push({
@@ -125,7 +125,7 @@
 		// Draw the chart
 		var chart = new dimple.chart(svg, update(0));
 		var x = chart.addCategoryAxis("x", "Age range");
-		x.addOrderRule("Age range")
+		x.addOrderRule("Age range");
 		x.showGridlines = true;
 		x.fontSize = 12;
 		var y = chart.addMeasureAxis("y", "Percentage of survivors");
@@ -169,14 +169,14 @@
             .duration(500)
 			.attr("cx", 10+ 50)
 			.attr("cy", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d);})
-			.attr("r", function(d) {return chart.axes[2]._scale(d);})
+			.attr("r", function(d) {return chart.axes[2]._scale(d);});
 
 			d3.select(".legend_size").select("svg").selectAll("text")
 			.transition()
             .duration(500)
 			.attr("x", 10+50-6)
 			.attr("y", function(d) {return 10+chart.axes[2]._scale(Math.max(...cir))*2-chart.axes[2]._scale(d)-chart.axes[2]._scale(d)-1;})
-			.text(function(d) {return d;})
+			.text(function(d) {return d;});
 		}
 			
 		d3.select("body")
@@ -184,7 +184,7 @@
 			.attr("class", "legend_size")
 			.append("b")
 			.text("Number of survivors:")
-			.append("br")
+			.append("br");
 			
 		var cir = [20,10];
 		var sel = d3.select(".legend_size")
@@ -192,12 +192,12 @@
 			.selectAll("g")
 			.data(cir)
 			.enter()
-			.append("g")
+			.append("g");
 			
 		sel.append("circle")
 			.attr("cx", 50)
 			.attr("cy", 0)
-			.attr("r", 0)			
+			.attr("r", 0);	
 		sel.append("text")
 			.attr("x", 50)
 			.attr("y", 0)
@@ -216,14 +216,14 @@
 			.attr("class", "legend_color")
 			.append("b")
 			.text("Circle colors:")
-			.append("br")
+			.append("br");
 					 
 		var sel = d3.select(".legend_color")
 			.append("svg")
 			.selectAll("g")
 			.data(sexes)
 			.enter()
-			.append("g")
+			.append("g");
 			
 			sel.append("rect")
 			.attr("x", xpad)
@@ -236,7 +236,7 @@
 			sel.append("text")
 			.attr("x", xpad+wrec+10)
 			.attr("y", function(d,i) {return 10+i*(hrec+hrec/2)+hrec-4;})
-			.text(function(d) {return d.name;})
+			.text(function(d) {return d.name;});
 			
 		// Include the buttons for selecting the passenger class
 		var passengerClasses = [
@@ -249,7 +249,7 @@
 			.append("div")
 			.attr("class", "pclass_buttons")
 			.append("b")
-			.text("Select passenger class:")
+			.text("Select passenger class:");
 						
         var buttons = d3.select(".pclass_buttons").selectAll("div")
                         .data(passengerClasses)
